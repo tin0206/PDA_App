@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'widgets/custom_bottom_nav.dart';
+import 'history_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final Map<String, String?>? user;
@@ -498,7 +499,17 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: const CustomBottomNav(),
+      bottomNavigationBar: CustomBottomNav(
+        onTap: (index) {
+          if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const HistoryScreen()),
+            );
+            return;
+          }
+        },
+      ),
     );
   }
 }
