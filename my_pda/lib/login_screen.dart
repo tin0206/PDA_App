@@ -91,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.2),
+            color: Colors.green.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(16),
           ),
           child: const Row(
@@ -129,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
@@ -172,8 +172,8 @@ class _LoginScreenState extends State<LoginScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.blue.withOpacity(0.2)
-              : Colors.grey.withOpacity(0.1),
+              ? Colors.blue.withValues(alpha: 0.2)
+              : Colors.grey.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? Colors.blue : Colors.transparent,
@@ -222,7 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
         dashPattern: const [8, 3],
         strokeWidth: 2,
         strokeCap: StrokeCap.round,
-        color: Colors.grey.withOpacity(0.5),
+        color: Colors.grey.withValues(alpha: 0.5),
       ),
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
@@ -300,8 +300,8 @@ class _LoginScreenState extends State<LoginScreen> {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        splashColor: Colors.blue.withOpacity(0.3),
-        highlightColor: Colors.blue.withOpacity(0.15),
+        splashColor: Colors.blue.withValues(alpha: 0.3),
+        highlightColor: Colors.blue.withValues(alpha: 0.15),
         onTap: () {
           setState(() {
             if (!isIcon && pin.length < 4) {
@@ -315,7 +315,7 @@ class _LoginScreenState extends State<LoginScreen> {
         },
         child: Container(
           decoration: BoxDecoration(
-            color: isConfirm ? Colors.blue : Colors.grey.withOpacity(0.2),
+            color: isConfirm ? Colors.blue : Colors.grey.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
