@@ -27,24 +27,28 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
     }
 
     setState(() => _sending = true);
-    // Simulate network delay
+
     await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return; // ✅ kiểm tra sau async gap
+
     setState(() => _sending = false);
 
-    // Show confirmation dialog
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Mã PIN đã được gửi'),
         content: Text('Một mã đặt lại đã được gửi tới $email.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Đóng'),
           ),
         ],
       ),
     );
+
+    if (!mounted) return;
 
     Navigator.of(context).pop();
   }

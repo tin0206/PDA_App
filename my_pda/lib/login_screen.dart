@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'forgot_pin_screen.dart';
+import 'dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -304,13 +305,36 @@ class _LoginScreenState extends State<LoginScreen> {
         splashColor: Colors.blue.withValues(alpha: 0.3),
         highlightColor: Colors.blue.withValues(alpha: 0.15),
         onTap: () {
+          if (text == '✓') {
+            // confirm entered PIN
+            const String correctPin = '1111';
+            if (pin == correctPin) {
+              // find selected user map
+              final selectedMap = users.firstWhere(
+                (u) => u['name'] == selectedUser,
+                orElse: () => {'name': selectedUser},
+              );
+              // navigate to dashboard and replace login
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => DashboardScreen(user: selectedMap),
+                ),
+              );
+            } else {
+              // show error and clear
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Mã PIN không đúng')),
+              );
+              setState(() => pin = '');
+            }
+            return;
+          }
+
           setState(() {
             if (!isIcon && pin.length < 4) {
               pin += text;
             } else if (text == 'X' && pin.isNotEmpty) {
               pin = pin.substring(0, pin.length - 1);
-            } else if (text == '✓') {
-              print("PIN entered: $pin");
             }
           });
         },
@@ -331,6 +355,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
           ),
