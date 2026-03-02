@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dotted_border/dotted_border.dart';
+import 'forgot_pin_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -111,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildUserSelection() {
     return SizedBox(
-      height: 250, // hoặc Expanded nếu bạn dùng flex
+      height: 320, // hoặc Expanded nếu bạn dùng flex
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -274,7 +275,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildNumpad() {
     return SizedBox(
-      height: 220,
+      height: 240,
       child: GridView.count(
         crossAxisCount: 3,
         mainAxisSpacing: 12,
@@ -339,11 +340,21 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildFooter() {
-    return const Row(
+    return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text('Quên Mã PIN?', style: TextStyle(color: Colors.grey)),
-        Text('Đăng Nhập Quản Trị', style: TextStyle(color: Colors.grey)),
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const ForgotPinScreen()),
+            );
+          },
+          child: const Text(
+            'Quên Mã PIN?',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+        const Text('Đăng Nhập Quản Trị', style: TextStyle(color: Colors.grey)),
       ],
     );
   }
