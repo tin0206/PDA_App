@@ -233,6 +233,16 @@ class DashboardScreen extends StatelessWidget {
                                       color: isRunning
                                           ? const Color(0xFF1A3935)
                                           : const Color(0xFF23303A),
+                                      border: Border.all(
+                                        color: isRunning
+                                            ? Colors.greenAccent.withValues(
+                                                alpha: 0.4,
+                                              )
+                                            : Colors.grey.withValues(
+                                                alpha: 0.4,
+                                              ),
+                                        width: 1.5,
+                                      ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Row(
@@ -243,8 +253,12 @@ class DashboardScreen extends StatelessWidget {
                                           height: 8,
                                           decoration: BoxDecoration(
                                             color: isRunning
-                                                ? Colors.greenAccent
-                                                : Colors.grey,
+                                                ? Colors.greenAccent.withValues(
+                                                    alpha: 0.4,
+                                                  )
+                                                : Colors.grey.withValues(
+                                                    alpha: 0.4,
+                                                  ),
                                             shape: BoxShape.circle,
                                           ),
                                         ),

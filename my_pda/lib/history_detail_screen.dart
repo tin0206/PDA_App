@@ -99,7 +99,7 @@ class HistoryDetailScreen extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF102D4A),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '${ingredients.length} Items',

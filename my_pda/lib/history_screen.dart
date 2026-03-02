@@ -114,6 +114,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
             : (text == 'CẢNH BÁO'
                   ? const Color(0xFFB7811B)
                   : const Color(0xFF17242C)),
+        border: Border.all(
+          color: text == 'HOÀN THÀNH'
+              ? Colors.greenAccent.withValues(alpha: 0.4)
+              : Colors.grey.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -124,8 +130,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
             height: 8,
             decoration: BoxDecoration(
               color: text == 'HOÀN THÀNH'
-                  ? Colors.greenAccent
-                  : (text == "CẢNH BÁO" ? Colors.orange : Colors.white54),
+                  ? Colors.greenAccent.withValues(alpha: 0.4)
+                  : (text == 'CẢNH BÁO'
+                        ? const Color(0xFFF59E0B)
+                        : const Color(0xFF17242C)),
               shape: BoxShape.circle,
             ),
           ),
