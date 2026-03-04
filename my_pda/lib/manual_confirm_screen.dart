@@ -50,9 +50,22 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
         _inputValue = '0';
       }
 
-      double? value = double.tryParse(_inputValue);
+      // Nếu người dùng nhập hơn 4 chữ số sau dấu thập phân,
+      // tự động làm tròn về 4 chữ số.
+      if (_inputValue.contains('.')) {
+        final dotIndex = _inputValue.indexOf('.');
+        final decimals = _inputValue.length - dotIndex - 1;
+        if (decimals > 4) {
+          final rounded = double.tryParse(_inputValue);
+          if (rounded != null) {
+            _inputValue = rounded.toStringAsFixed(4);
+          }
+        }
+      }
+
+      final value = double.tryParse(_inputValue);
       if (value != null) {
-        _weightController.text = value.toStringAsFixed(2);
+        _weightController.text = value.toStringAsFixed(4);
       } else {
         _weightController.text = _inputValue;
       }
@@ -83,6 +96,7 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,8 +104,6 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
               _buildWarningBanner(),
               const SizedBox(height: 16),
               _buildMaterialCard(),
-              const SizedBox(height: 20),
-              _buildWeightInput(),
               const SizedBox(height: 20),
               _buildReasonDropdown(),
               const SizedBox(height: 24),
@@ -216,62 +228,60 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Container(
+            height: 1,
+            width: double.infinity,
+            color: const Color(0xFF1F2937),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'NHẬP KHỐI LƯỢNG (KG)',
+            style: TextStyle(
+              color: Color(0xFFF97316),
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0B101A),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF1F2937)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _weightController,
+                    readOnly: true,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'KG',
+                  style: TextStyle(
+                    color: Color(0xFF9CA3AF),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildWeightInput() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'NHẬP KHỐI LƯỢNG (KG)',
-          style: TextStyle(
-            color: Color(0xFFF97316),
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color(0xFF111827),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF1F2937)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _weightController,
-                  readOnly: true,
-                  textAlign: TextAlign.left,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    isDense: true,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Text(
-                'KG',
-                style: TextStyle(
-                  color: Color(0xFF9CA3AF),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -303,7 +313,11 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
               icon: const Icon(Icons.expand_more, color: Color(0xFF6B7280)),
               hint: const Text(
                 'Chọn lý do...',
-                style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               items: _reasons
                   .map(
@@ -353,7 +367,7 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
           crossAxisCount: 3,
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
-          childAspectRatio: 2.3,
+          childAspectRatio: 2.42,
         ),
         itemCount: keys.length,
         itemBuilder: (context, index) {
