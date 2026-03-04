@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'manual_confirm_screen.dart';
 
 enum _IngredientType { completed, waiting, neutral, warning }
 
@@ -185,7 +186,11 @@ class ScanDetailScreen extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      // TODO: manual input flow
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ManualConfirmScreen(),
+                        ),
+                      );
                     },
                     icon: const Icon(Icons.keyboard, size: 24),
                     label: const Text(
