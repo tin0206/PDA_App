@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'widgets/custom_bottom_nav.dart';
 import 'history_screen.dart';
 import 'settings_screen.dart';
+import 'scan_detail_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final Map<String, String?>? user;
@@ -589,6 +590,10 @@ class DashboardScreen extends StatelessWidget {
       ),
       bottomNavigationBar: CustomBottomNav(
         onTap: (index) {
+          if (index == 1) {
+            Navigator.push(context, _slideRoute(const ScanDetailScreen()));
+            return;
+          }
           if (index == 2) {
             Navigator.push(context, _slideRoute(const HistoryScreen()));
             return;
