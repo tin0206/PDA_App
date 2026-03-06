@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_pda/barcode_fail_screen.dart';
+// import 'package:my_pda/barcode_fail_screen.dart';
 
 import 'barcode_success_screen.dart';
 
@@ -117,8 +117,8 @@ class BarcodeScannerScreen extends StatelessWidget {
                     onPressed: () async {
                       final result = await Navigator.of(context).push<bool>(
                         MaterialPageRoute(
-                          // builder: (_) => const BarcodeSuccessScreen(),
-                          builder: (_) => const BarcodeFailScreen(),
+                          builder: (_) => const BarcodeSuccessScreen(),
+                          // builder: (_) => const BarcodeFailScreen(),
                         ),
                       );
 

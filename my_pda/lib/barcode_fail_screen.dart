@@ -62,7 +62,6 @@ class BarcodeFailScreen extends StatelessWidget {
               ),
             ),
           ),
-          _buildBottomNav(),
         ],
       ),
     );
@@ -242,61 +241,6 @@ class BarcodeFailScreen extends StatelessWidget {
             color: highlightColor,
             fontSize: 15,
             fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomNav() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF180B0B),
-        border: Border(top: BorderSide(color: Color(0xFF27272A))),
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: const [
-          _BottomNavItem(icon: Icons.home_outlined, label: 'TRANG CHỦ'),
-          _BottomNavItem(
-            icon: Icons.qr_code_scanner,
-            label: 'QUÉT MÃ',
-            isActive: true,
-          ),
-          _BottomNavItem(icon: Icons.settings_outlined, label: 'CÀI ĐẶT'),
-        ],
-      ),
-    );
-  }
-}
-
-class _BottomNavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-
-  const _BottomNavItem({
-    required this.icon,
-    required this.label,
-    this.isActive = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isActive ? const Color(0xFFEF4444) : const Color(0xFF9CA3AF);
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color, size: 22),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
           ),
         ),
       ],
