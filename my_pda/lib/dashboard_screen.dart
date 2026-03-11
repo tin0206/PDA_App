@@ -315,6 +315,13 @@ class DashboardScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFF0F1724),
                       borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,6 +387,13 @@ class DashboardScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFF0F1724),
                       borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,6 +450,7 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ],
             ),
+            SizedBox(height: 8),
             // Big scan card (styled with corner markers, circular icon and pill)
             Expanded(
               child: Center(
