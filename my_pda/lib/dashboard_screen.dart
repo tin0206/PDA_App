@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'widgets/custom_bottom_nav.dart';
 import 'history_screen.dart';
 import 'settings_screen.dart';
@@ -116,7 +115,7 @@ class DashboardScreen extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 4),
                               const Text(
                                 'Hiện tại bạn chưa có thông báo mới.',
                                 style: TextStyle(
@@ -157,7 +156,7 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
             const Text(
               'Bảng Điều Khiển',
               style: TextStyle(

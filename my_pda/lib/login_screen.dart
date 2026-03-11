@@ -50,9 +50,9 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildHeader(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 10),
               _buildUserSelection(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               if (selectedUser != null) ...[
                 _buildPinEntry(),
                 const SizedBox(height: 24),
@@ -113,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildUserSelection() {
     return SizedBox(
-      height: 320, // hoặc Expanded nếu bạn dùng flex
+      height: 180, // hoặc Expanded nếu bạn dùng flex
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
