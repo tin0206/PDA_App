@@ -205,7 +205,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 20,
+                          fontSize: 15,
                         ),
                       ),
                       const SizedBox(width: 10),

@@ -92,21 +92,20 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: const [SizedBox(width: 40)],
+        actions: const [SizedBox(width: 30)],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildWarningBanner(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               _buildMaterialCard(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               _buildReasonDropdown(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               _buildKeypad(),
             ],
           ),
@@ -120,10 +119,10 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
         child: SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: SizedBox(
               width: double.infinity,
-              height: 52,
+              height: 40,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF6B00),
@@ -136,10 +135,10 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
                 onPressed: () {
                   // TODO: handle confirm manual input
                 },
-                icon: const Icon(Icons.check_circle, size: 22),
+                icon: const Icon(Icons.check_circle, size: 18),
                 label: const Text(
                   'XÁC NHẬN NGAY',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -152,21 +151,21 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
   Widget _buildWarningBanner() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
       decoration: BoxDecoration(
         color: const Color(0xFF4A2C19),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFDC7C2B), width: 1.2),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: const [
           Icon(Icons.warning_amber_rounded, color: Color(0xFFFBBF24)),
           SizedBox(width: 10),
           Expanded(
             child: Text(
               'Không đọc được nhãn. Vui lòng nhập khối lượng thủ công.',
-              style: TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
+              style: TextStyle(color: Colors.white, fontSize: 12, height: 1.3),
             ),
           ),
         ],
@@ -190,7 +189,7 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
             'VẬT TƯ ĐÃ QUÉT',
             style: TextStyle(
               color: Color(0xFF6B7280),
-              fontSize: 13,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -202,7 +201,7 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
                   'AL-2024-Sheet',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -228,24 +227,24 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           Container(
             height: 1,
             width: double.infinity,
             color: const Color(0xFF1F2937),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           const Text(
             'NHẬP KHỐI LƯỢNG (KG)',
             style: TextStyle(
               color: Color(0xFFF97316),
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 5),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
               color: const Color(0xFF0B101A),
               borderRadius: BorderRadius.circular(12),
@@ -259,7 +258,7 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
                     readOnly: true,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 32,
+                      fontSize: 20,
                       fontWeight: FontWeight.w700,
                     ),
                     decoration: const InputDecoration(
@@ -297,7 +296,7 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 5),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
@@ -389,7 +388,7 @@ class _ManualConfirmScreenState extends State<ManualConfirmScreen> {
               key,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 22,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
             ),

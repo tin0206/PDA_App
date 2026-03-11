@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 
 class ScanCompleteItem {
@@ -38,38 +39,54 @@ class ScanCompleteScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 12),
-            _buildHeader(),
-            const SizedBox(height: 24),
-            const Text(
-              'NHẬT KÝ XÁC THỰC',
-              style: TextStyle(
-                color: Color(0xFF94A3B8),
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.0,
+      // Cấu trúc Column để tách biệt phần Scroll và phần Fixed nút bấm
+      body: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  // Header cuộn theo danh sách
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'NHẬT KÝ XÁC THỰC',
+                          style: TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+                  ),
+                  // Danh sách item cuộn
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _buildItemCard(items[index]),
+                      );
+                    }, childCount: items.length),
+                  ),
+                  // Padding nhỏ dưới cùng của danh sách để không bị lấp bởi nút
+                  const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView.separated(
-                itemCount: items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  return _buildItemCard(item);
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildBottomButtons(context),
-          ],
-        ),
+          ),
+
+          // PHẦN FIXED: Nút bấm luôn nằm ở đây
+          _buildFixedBottomButtons(context),
+        ],
       ),
     );
   }
@@ -78,46 +95,38 @@ class ScanCompleteScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const SizedBox(height: 8),
+        const SizedBox(height: 20),
         Center(
           child: Container(
             width: 120,
             height: 120,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF133B2E),
+              color: Color(0xFF133B2E),
             ),
-            child: Center(
-              child: SizedBox(
-                width: 80,
-                height: 80,
-                child: const Icon(
-                  Icons.check_circle_outline,
-                  size: 80,
-                  color: Color(0xFF22C55E),
-                ),
+            child: const Center(
+              child: Icon(
+                Icons.check_circle_outline,
+                size: 80,
+                color: Color(0xFF22C55E),
               ),
             ),
           ),
         ),
         const SizedBox(height: 20),
-        const Center(
-          child: Text(
-            'Hoàn thành đổ liệu',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-            ),
+        const Text(
+          'Hoàn thành đổ liệu',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 8),
-        const Center(
-          child: Text(
-            'Tất cả nguyên liệu đã được quét thành công',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFFCBD5F5), fontSize: 16),
-          ),
+        const Text(
+          'Tất cả nguyên liệu đã được quét thành công',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Color(0xFFCBD5F5), fontSize: 16),
         ),
       ],
     );
@@ -193,83 +202,84 @@ class ScanCompleteScreen extends StatelessWidget {
     );
   }
 
+  // Widget chứa 2 nút bấm cố định
+  Widget _buildFixedBottomButtons(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        32,
+      ), // Padding cho an toàn (Safe Area)
+      decoration: BoxDecoration(
+        color: const Color(0xFF101922),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1D4ED8),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              onPressed: () => Navigator.of(context).pop(false),
+              icon: const Icon(Icons.cloud_upload),
+              label: const Text(
+                'XÁC NHẬN VÀ KẾT THÚC',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Color(0xFF374151)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text(
+                'QUÉT TANK TIẾP THEO',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatScanTime(DateTime? dateTime) {
     if (dateTime == null) return 'Thời gian quét chưa có';
-
     String twoDigits(int n) => n.toString().padLeft(2, '0');
-
-    final day = twoDigits(dateTime.day);
-    final month = twoDigits(dateTime.month);
-    final year = dateTime.year.toString();
-    final hour = twoDigits(dateTime.hour);
-    final minute = twoDigits(dateTime.minute);
-    final second = twoDigits(dateTime.second);
-
-    return '$day/$month/$year $hour:$minute:$second';
+    return '${twoDigits(dateTime.day)}/${twoDigits(dateTime.month)}/${dateTime.year} '
+        '${twoDigits(dateTime.hour)}:${twoDigits(dateTime.minute)}:${twoDigits(dateTime.second)}';
   }
 
   String _formatTarget(String raw) {
-    // Tách phần số và đơn vị, sau đó format số về dạng float 2 chữ số thập phân
     final match = RegExp(r'([0-9]+(?:\.[0-9]+)?)').firstMatch(raw);
     if (match == null) return raw;
-
-    final numberPart = match.group(1)!;
-    final unitPart = raw.replaceFirst(numberPart, '').trim();
-
-    final value = double.tryParse(numberPart);
+    final value = double.tryParse(match.group(1)!);
     if (value == null) return raw;
-
-    final formatted = value.toStringAsFixed(1);
-    return unitPart.isEmpty ? formatted : '$formatted $unitPart';
-  }
-
-  Widget _buildBottomButtons(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1D4ED8),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            onPressed: () {
-              Navigator.of(context).pop(false);
-            },
-            icon: const Icon(Icons.cloud_upload),
-            label: const Text(
-              'XÁC NHẬN VÀ KẾT THÚC',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: const BorderSide(color: Color(0xFF374151)),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            onPressed: () {
-              Navigator.of(context).pop(true);
-            },
-            icon: const Icon(Icons.qr_code_scanner),
-            label: const Text(
-              'QUÉT TANK TIẾP THEO',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ),
-      ],
-    );
+    return '${value.toStringAsFixed(1)} ${raw.replaceAll(match.group(1)!, '').trim()}';
   }
 }

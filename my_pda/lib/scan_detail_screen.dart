@@ -183,7 +183,7 @@ class _ScanDetailScreenState extends State<ScanDetailScreen> {
             _buildMetricsRow(),
             const SizedBox(height: 16),
             _buildScanStatusCard(context),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             const Text(
               'Nguyên Liệu Yêu Cầu',
               style: TextStyle(
@@ -207,7 +207,6 @@ class _ScanDetailScreenState extends State<ScanDetailScreen> {
               ),
               const SizedBox(height: 12),
             ],
-            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -328,7 +327,7 @@ class _ScanDetailScreenState extends State<ScanDetailScreen> {
   Widget _buildTankHeaderCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       decoration: BoxDecoration(
         color: const Color(0xFF111827),
         borderRadius: BorderRadius.circular(16),
@@ -341,11 +340,12 @@ class _ScanDetailScreenState extends State<ScanDetailScreen> {
         ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 100,
-            height: 100,
+            alignment: Alignment.center,
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
               color: const Color(0xFF1F2937),
               borderRadius: BorderRadius.circular(12),
@@ -380,19 +380,19 @@ class _ScanDetailScreenState extends State<ScanDetailScreen> {
                               fontSize: 13,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          SizedBox(height: 2),
                           Text(
                             'Hỗn Hợp Dung Môi Công Nghiệp A',
                             style: TextStyle(
                               color: Color(0xFF38BDF8),
-                              fontSize: 13,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
@@ -487,22 +487,22 @@ class _ScanDetailScreenState extends State<ScanDetailScreen> {
                         'MÁY QUÉT ĐANG BẬT',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 12,
+                          fontSize: 8,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 4),
                   const Text(
                     'Sẵn sàng quét',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 24,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   const Text(
                     'Hướng PDA vào mã vạch nguyên liệu',
                     style: TextStyle(color: Color(0xFFC5DFFA), fontSize: 13),
@@ -914,7 +914,7 @@ class _MetricCard extends StatelessWidget {
         ? const Color(0xFF1377DC)
         : Colors.white70;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xFF111827),
         borderRadius: BorderRadius.circular(14),
@@ -941,12 +941,12 @@ class _MetricCard extends StatelessWidget {
                 value,
                 style: TextStyle(
                   color: valueColor,
-                  fontSize: 20,
+                  fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(width: 4),
-              Text(unit, style: TextStyle(color: unitColor, fontSize: 13)),
+              Text(unit, style: TextStyle(color: unitColor, fontSize: 10)),
             ],
           ),
         ],

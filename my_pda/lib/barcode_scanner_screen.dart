@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-// import 'package:my_pda/barcode_fail_screen.dart';
 
+import 'package:my_pda/barcode_fail_screen.dart';
 import 'barcode_success_screen.dart';
 
 class BarcodeScannerScreen extends StatelessWidget {

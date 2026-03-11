@@ -84,13 +84,11 @@ class _BarcodeSuccessScreenState extends State<BarcodeSuccessScreen> {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 4, 24, 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const SizedBox(height: 32),
             _buildSuccessIcon(),
-            const SizedBox(height: 24),
             const Text(
               'VẬT LIỆU HỢP LỆ',
               textAlign: TextAlign.center,
@@ -100,7 +98,6 @@ class _BarcodeSuccessScreenState extends State<BarcodeSuccessScreen> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 12),
             const Text(
               'Khối lượng đã được cập nhật thành công vào hệ thống sản xuất.',
               textAlign: TextAlign.center,
@@ -110,11 +107,11 @@ class _BarcodeSuccessScreenState extends State<BarcodeSuccessScreen> {
                 height: 1.4,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 15),
             _buildMaterialDetailCard(),
-            const Spacer(),
+            const SizedBox(height: 12),
             _buildBackToFormulaButton(context),
-            const SizedBox(height: 28),
+            const SizedBox(height: 10),
             _buildAutoBackSection(),
           ],
         ),
@@ -158,7 +155,7 @@ class _BarcodeSuccessScreenState extends State<BarcodeSuccessScreen> {
   Widget _buildMaterialDetailCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
       decoration: BoxDecoration(
         color: const Color(0xFF052814),
         borderRadius: BorderRadius.circular(20),
@@ -176,7 +173,6 @@ class _BarcodeSuccessScreenState extends State<BarcodeSuccessScreen> {
               letterSpacing: 1.0,
             ),
           ),
-          const SizedBox(height: 16),
           Row(
             children: const [
               Expanded(
@@ -198,9 +194,7 @@ class _BarcodeSuccessScreenState extends State<BarcodeSuccessScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
           const Divider(color: Color(0xFF14532D)),
-          const SizedBox(height: 16),
           Row(
             children: const [
               Expanded(
