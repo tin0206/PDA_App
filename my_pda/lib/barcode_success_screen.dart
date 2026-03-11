@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 class BarcodeSuccessScreen extends StatefulWidget {
-  const BarcodeSuccessScreen({super.key});
+  final String scannedCode;
+
+  const BarcodeSuccessScreen({super.key, required this.scannedCode});
 
   @override
   State<BarcodeSuccessScreen> createState() => _BarcodeSuccessScreenState();
@@ -98,6 +100,18 @@ class _BarcodeSuccessScreenState extends State<BarcodeSuccessScreen> {
                 fontWeight: FontWeight.w800,
               ),
             ),
+            const SizedBox(height: 4),
+            // Hiển thị rõ mã vạch vừa quét
+            Text(
+              'Mã vạch: ${widget.scannedCode}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
             const Text(
               'Khối lượng đã được cập nhật thành công vào hệ thống sản xuất.',
               textAlign: TextAlign.center,
@@ -174,22 +188,23 @@ class _BarcodeSuccessScreenState extends State<BarcodeSuccessScreen> {
             ),
           ),
           Row(
-            children: const [
-              Expanded(
+            children: [
+              const Expanded(
                 child: Text(
-                  'Tên vật liệu',
+                  'Mã vạch đã quét',
                   style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
                 ),
               ),
               Expanded(
                 child: Text(
-                  'Nhôm Hợp Kim 6061',
+                  widget.scannedCode,
                   textAlign: TextAlign.right,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

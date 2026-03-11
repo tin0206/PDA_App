@@ -1,10 +1,92 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:my_pda/barcode_fail_screen.dart';
 import 'barcode_success_screen.dart';
 
-class BarcodeScannerScreen extends StatelessWidget {
-  const BarcodeScannerScreen({super.key});
+class BarcodeScannerScreen extends StatefulWidget {
+  final bool fromDashboard;
+
+  const BarcodeScannerScreen({super.key, this.fromDashboard = false});
+
+  @override
+  State<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
+}
+
+class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+
+  Timer? _scanDebounce;
+  bool _isProcessingScan = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Tự động focus để PDA bắn mã như bàn phím
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+        // Ẩn bàn phím ảo, chỉ dùng scanner của PDA
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+      }
+    });
+
+    // Tự động xử lý khi TextField nhận được mã từ scanner (không cần nhấn nút)
+    _controller.addListener(() {
+      final text = _controller.text;
+      if (text.isEmpty || _isProcessingScan) return;
+
+      _scanDebounce?.cancel();
+      _scanDebounce = Timer(const Duration(milliseconds: 200), () {
+        if (!mounted) return;
+        if (_controller.text.isEmpty || _isProcessingScan) return;
+        _isProcessingScan = true;
+        _handleScanned(_controller.text);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _scanDebounce?.cancel();
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleScanned(String code) async {
+    final trimmed = code.trim();
+    if (trimmed.isEmpty) return;
+
+    // Nếu mở từ Dashboard: sau khi quét xong quay lại Dashboard luôn
+    if (widget.fromDashboard) {
+      Navigator.of(context).pop(trimmed);
+      return;
+    }
+
+    // Ngữ cảnh khác: hiển thị màn hình thành công/thất bại
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => BarcodeSuccessScreen(scannedCode: trimmed),
+        // builder: (_) => const BarcodeFailScreen(),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (result == true) {
+      Navigator.of(context).pop(true);
+    } else {
+      // Nếu cần quét tiếp, làm sạch input và focus lại
+      _controller.clear();
+      _focusNode.requestFocus();
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
+      _isProcessingScan = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +117,22 @@ class BarcodeScannerScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // TextField ẩn để nhận dữ liệu từ PDA (keyboard wedge)
+                  Opacity(
+                    opacity: 0,
+                    child: TextField(
+                      controller: _controller,
+                      focusNode: _focusNode,
+                      autofocus: true,
+                      showCursor: false, // Ẩn con trỏ chuột
+                      keyboardType: TextInputType.none,
+                      onSubmitted: _handleScanned,
+                      decoration: const InputDecoration(
+                        border:
+                            InputBorder.none, // Ẩn hoàn toàn TextField khỏi UI
+                      ),
+                    ),
+                  ),
                   Container(
                     width: 220,
                     height: 220,
@@ -99,38 +197,6 @@ class BarcodeScannerScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF22C55E),
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    onPressed: () async {
-                      final result = await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(
-                          builder: (_) => const BarcodeSuccessScreen(),
-                          // builder: (_) => const BarcodeFailScreen(),
-                        ),
-                      );
-
-                      if (result == true) {
-                        Navigator.of(context).pop(true);
-                      }
-                    },
-                    child: const Text(
-                      'Quét thành công',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
