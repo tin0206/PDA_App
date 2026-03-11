@@ -7,7 +7,9 @@ import 'dashboard_screen.dart';
 import 'settings_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  final Map<String, String?>? user;
+
+  const HistoryScreen({super.key, this.user});
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -535,7 +537,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
             return;
           }
           if (index == 3) {
-            Navigator.push(context, _slideRoute(const SettingsScreen()));
+            Navigator.push(
+              context,
+              _slideRoute(SettingsScreen(user: widget.user)),
+            );
             return;
           }
         },

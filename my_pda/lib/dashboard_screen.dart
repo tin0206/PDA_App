@@ -643,7 +643,7 @@ class DashboardScreen extends StatelessWidget {
             return;
           }
           if (index == 2) {
-            Navigator.push(context, _slideRoute(const HistoryScreen()));
+            Navigator.push(context, _slideRoute(HistoryScreen(user: user)));
             return;
           }
           if (index == 3) {
