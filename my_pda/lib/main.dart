@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/foundation.dart'; // Thêm thư viện này để dùng kReleaseMode
 import 'login_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint("Lỗi load file .env: $e");
+  }
+
   runApp(
     DevicePreview(
-      enabled:
-          kDebugMode &&
-          (kIsWeb ||
-              ![
-                TargetPlatform.android,
-                TargetPlatform.iOS,
-              ].contains(defaultTargetPlatform)),
+      enabled: kDebugMode && kIsWeb,
       builder: (context) => const MyApp(),
     ),
   );
