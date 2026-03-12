@@ -13,12 +13,13 @@ Future<void> main() async {
     debugPrint("Lỗi load file .env: $e");
   }
 
-  runApp(
-    DevicePreview(
-      enabled: kDebugMode && kIsWeb,
-      builder: (context) => const MyApp(),
-    ),
-  );
+  // runApp(
+  //   DevicePreview(
+  //     enabled: kDebugMode && kIsWeb,
+  //     builder: (context) => const MyApp(),
+  //   ),
+  // );
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {

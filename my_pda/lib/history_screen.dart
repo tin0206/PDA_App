@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'widgets/custom_bottom_nav.dart';
 import 'history_detail_screen.dart';
 import 'scan_detail_screen.dart';
-import 'dashboard_screen.dart';
 import 'settings_screen.dart';
 
 class HistoryScreen extends StatefulWidget {

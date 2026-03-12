@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 
 class ScanCompleteItem {
@@ -215,7 +214,7 @@ class ScanCompleteScreen extends StatelessWidget {
         color: const Color(0xFF101922),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
