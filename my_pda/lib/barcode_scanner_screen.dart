@@ -25,16 +25,17 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   @override
   void initState() {
     super.initState();
-    // Tự động focus để PDA bắn mã như bàn phím
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _focusNode.requestFocus();
-        // Ẩn bàn phím ảo, chỉ dùng scanner của PDA
+      if (!mounted) return;
+
+      _focusNode.requestFocus();
+
+      Future.delayed(const Duration(milliseconds: 100), () {
         SystemChannels.textInput.invokeMethod('TextInput.hide');
-      }
+      });
     });
 
-    // Tự động xử lý khi TextField nhận được mã từ scanner (không cần nhấn nút)
     _controller.addListener(() {
       final text = _controller.text;
       if (text.isEmpty || _isProcessingScan) return;
@@ -130,7 +131,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                         onSubmitted: (value) {
                           _handleScanned(value);
                         },
-                        keyboardType: TextInputType.none,
+                        keyboardType: TextInputType.visiblePassword,
+                        enableInteractiveSelection: false,
+                        // readOnly: true,
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                         ),
