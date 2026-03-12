@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:my_pda/models/ingredient.dart';
 import 'widgets/custom_bottom_nav.dart';
 import 'history_screen.dart';
 import 'settings_screen.dart';
 import 'scan_detail_screen.dart';
 import 'barcode_scanner_screen.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 class DashboardScreen extends StatefulWidget {
   final Map<String, String?>? user;
@@ -31,6 +35,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return SlideTransition(position: animation.drive(tween), child: child);
       },
     );
+  }
+
+  Future<Map<String, String>> _getRecipeId(String code) async {
+    try {
+      final response = await http.post(
+        Uri.parse('https://api.example.com/getRecipeId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'TankNumber': code}),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return data.map((key, value) => MapEntry(key, value as String));
+      } else {
+        debugPrint('Error fetching recipe ID: ${response.statusCode}');
+        return {};
+      }
+    } catch (e) {
+      debugPrint('Error fetching recipe ID: $e');
+      return {};
+    }
+  }
+
+  Future<IngredientModel?> _getRecipeDetails(String code) async {
+    try {
+      final data = await _getRecipeId(code);
+      final productionOrder = data['ProductionOrder'] ?? '';
+      final batchNumber = data['BatchNumber'] ?? '';
+
+      if (productionOrder.isEmpty || batchNumber.isEmpty) {
+        debugPrint('Missing production order or batch number');
+        return null;
+      }
+
+      final response = await http.post(
+        Uri.parse('https://api.example.com/getRecipeDetails'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'ProductionOrder': productionOrder,
+          'BatchNumber': batchNumber,
+        }),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return IngredientModel.fromJson(data);
+      } else {
+        debugPrint('Error fetching recipe details: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Error fetching recipe details: $e');
+      return null;
+    }
   }
 
   @override
@@ -477,6 +533,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         setState(() {
                           scannedCode = result;
                         });
+
+                        await _getRecipeDetails(result);
                       }
                     },
                     child: Container(
