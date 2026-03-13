@@ -39,52 +39,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<Map<String, String>> _getRecipeId(String code) async {
     try {
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/getRecipeId'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'TankNumber': code}),
-      );
+      debugPrint('>>> Đang quét mã Tank: $code');
+      final response = await http
+          .post(
+            Uri.parse('${ApiConfig.baseUrl}/getRecipeId'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'TankNumber': code}),
+          )
+          .timeout(const Duration(seconds: 10)); // Tránh treo app
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return data.map((key, value) => MapEntry(key, value as String));
+
+        // Kiểm tra status từ Server
+        if (data['status'] == 'success') {
+          return {
+            'ProductionOrder': data['ProductionOrder']?.toString() ?? '',
+            'BatchNumber': data['BatchNumber']?.toString() ?? '',
+          };
+        }
+        return {};
       } else {
-        debugPrint('Error fetching recipe ID: ${response.statusCode}');
+        debugPrint('Lỗi Server getRecipeId: ${response.statusCode}');
         return {};
       }
     } catch (e) {
-      debugPrint('Error fetching recipe ID: $e');
+      debugPrint('Lỗi kết nối getRecipeId: $e');
       return {};
     }
   }
 
-  Future<IngredientModel?> _getRecipeDetails(String code) async {
+  Future<List<IngredientModel>?> _getRecipeDetails(String code) async {
     try {
-      final data = await _getRecipeId(code);
-      final productionOrder = data['ProductionOrder'] ?? '';
-      final batchNumber = data['BatchNumber'] ?? '';
+      // Bước 1: Lấy thông tin định danh
+      final idData = await _getRecipeId(code);
+      final String po = idData['ProductionOrder'] ?? '';
+      final String batch = idData['BatchNumber'] ?? '';
 
-      if (productionOrder.isEmpty || batchNumber.isEmpty) {
-        debugPrint('Missing production order or batch number');
+      if (po.isEmpty || batch.isEmpty) {
+        debugPrint('⚠️ Không tìm thấy đơn hàng hoặc lô cho mã này.');
         return null;
       }
 
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/getRecipeDetails'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'ProductionOrder': productionOrder,
-          'BatchNumber': batchNumber,
-        }),
-      );
+      // Bước 2: Lấy chi tiết công thức
+      debugPrint('>>> Đang lấy chi tiết cho PO: $po, Batch: $batch');
+      final response = await http
+          .post(
+            Uri.parse('${ApiConfig.baseUrl}/getRecipeDetails'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'ProductionOrder': po, 'BatchNumber': batch}),
+          )
+          .timeout(const Duration(seconds: 10));
+
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return IngredientModel.fromJson(data);
+        final Map<String, dynamic> data = jsonDecode(response.body);
+
+        // Chuyển đổi sang RecipeResponse
+        final recipeResponse = RecipeResponse.fromJson(data);
+        return recipeResponse.ingredients;
       } else {
-        debugPrint('Error fetching recipe details: ${response.statusCode}');
+        debugPrint('Lỗi Server getRecipeDetails: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      debugPrint('Error fetching recipe details: $e');
+      debugPrint('Lỗi xử lý RecipeDetails: $e');
       return null;
     }
   }
@@ -534,7 +552,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           scannedCode = result;
                         });
 
-                        await _getRecipeDetails(result);
+                        var recipeDetails = await _getRecipeDetails(result);
                       }
                     },
                     child: Container(
