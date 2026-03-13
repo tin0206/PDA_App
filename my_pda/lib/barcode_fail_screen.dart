@@ -57,16 +57,6 @@ class BarcodeFailScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Color(0xFFE5E7EB), fontSize: 14),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Nguyên liệu: $ingredientName',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                   const SizedBox(height: 24),
                   _buildRetryButton(context),
                   const SizedBox(height: 24),

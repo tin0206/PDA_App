@@ -743,7 +743,7 @@ class _ScanDetailScreenState extends State<ScanDetailScreen> {
               border: Border.all(color: const Color(0xFF2563EB), width: 2),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 6),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -831,7 +831,7 @@ class _ScanDetailScreenState extends State<ScanDetailScreen> {
               border: Border.all(color: const Color(0xFF455266), width: 2),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 6),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -898,7 +898,7 @@ class _ScanDetailScreenState extends State<ScanDetailScreen> {
               border: Border.all(color: Colors.redAccent, width: 2),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 6),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

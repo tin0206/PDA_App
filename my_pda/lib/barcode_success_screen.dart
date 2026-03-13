@@ -100,16 +100,6 @@ class _BarcodeSuccessScreenState extends State<BarcodeSuccessScreen> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Nguyên liệu: ${widget.ingredientName}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
             const SizedBox(height: 8),
             const Text(
               'Khối lượng đã được cập nhật thành công vào hệ thống sản xuất.',

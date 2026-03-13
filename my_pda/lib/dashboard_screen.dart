@@ -23,6 +23,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<IngredientModel> _recipeIngredients = const [];
   bool _isLoadingIngredients = false;
 
+  String _notificationMessage() {
+    if (_isLoadingIngredients) {
+      return 'Đang tải danh sách nguyên liệu cho tank hiện tại.';
+    }
+
+    if (scannedCode == null) {
+      return 'Chưa có tank nào được quét.';
+    }
+
+    if (_recipeIngredients.isEmpty) {
+      return 'Tank $scannedCode hiện chưa có nguyên liệu nào.';
+    }
+
+    return 'Tank $scannedCode hiện có ${_recipeIngredients.length} nguyên liệu đã được tải.';
+  }
+
   Route _slideRoute(Widget page) {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => page,
@@ -200,9 +216,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ],
                               ),
                               const SizedBox(height: 4),
-                              const Text(
-                                'Hiện tại bạn chưa có thông báo mới.',
-                                style: TextStyle(
+                              Text(
+                                _notificationMessage(),
+                                style: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: 14,
                                 ),
@@ -563,21 +579,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           _recipeIngredients = recipeDetails ?? [];
                           _isLoadingIngredients = false;
                         });
-
-                        final hasIngredients = recipeDetails != null;
-                        final ingredientCount = _recipeIngredients.length;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              hasIngredients
-                                  ? ingredientCount > 0
-                                        ? 'Đã tải $ingredientCount nguyên liệu. Vào Chi tiết để bắt đầu quét.'
-                                        : 'Công thức không có nguyên liệu. Vào Chi tiết để xem thông tin.'
-                                  : 'Không lấy được danh sách nguyên liệu cho tank này.',
-                            ),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
                       }
                     },
                     child: Container(
@@ -738,20 +739,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                     ),
                                   )
-                                else if (scannedCode != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: Text(
-                                      _recipeIngredients.isEmpty
-                                          ? 'Chưa có nguyên liệu được tải'
-                                          : 'Đã tải ${_recipeIngredients.length} nguyên liệu',
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
+                                else
+                                  const SizedBox(height: 10),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 40,
