@@ -5,3 +5,9 @@ Screen size: iphone SE
 /c/Users/Tin/AppData/Local/Android/Sdk/platform-tools/adb.exe devices
 
 flutter run -d 25315524701919 --device-timeout 60 --no-pub
+
+
+
+flutter run -d 25315524701917 --device-timeout 90 --no-pub 
+
+db -s 25315524701917 logcat -s flutter

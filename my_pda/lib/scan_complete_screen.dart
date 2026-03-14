@@ -12,85 +12,130 @@ class ScanCompleteItem {
   });
 }
 
-class ScanCompleteScreen extends StatelessWidget {
+class ScanCompleteScreen extends StatefulWidget {
   final List<ScanCompleteItem> items;
+  final String tankNumber;
+  final String productionOrder;
+  final String batchNumber;
+  final String recipeName;
+  final String recipeVersion;
+  final String productCode;
+  final String productName;
+  final String shift;
+  final String plannedStart;
+  final Future<bool> Function() onConfirmComplete;
 
-  const ScanCompleteScreen({super.key, required this.items});
+  const ScanCompleteScreen({
+    super.key,
+    required this.items,
+    required this.onConfirmComplete,
+    this.tankNumber = '',
+    this.productionOrder = '',
+    this.batchNumber = '',
+    this.recipeName = '',
+    this.recipeVersion = '',
+    this.productCode = '',
+    this.productName = '',
+    this.shift = '',
+    this.plannedStart = '',
+  });
+
+  @override
+  State<ScanCompleteScreen> createState() => _ScanCompleteScreenState();
+}
+
+class _ScanCompleteScreenState extends State<ScanCompleteScreen> {
+  bool _isSubmitting = false;
+  bool _apiConfirmed = false;
+  String? _errorMessage;
+
+  Future<void> _handleConfirm() async {
+    if (_isSubmitting || _apiConfirmed) return;
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+
+    final ok = await widget.onConfirmComplete();
+    if (!mounted) return;
+
+    setState(() {
+      _isSubmitting = false;
+      _apiConfirmed = ok;
+      _errorMessage = ok ? null : 'Xác nhận thất bại. Vui lòng thử lại.';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF101922),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF111827),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
-        title: const Text(
-          'Tổng kết hoàn thành',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-      // Cấu trúc Column để tách biệt phần Scroll và phần Fixed nút bấm
-      body: Column(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  // Header cuộn theo danh sách
-                  SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(),
-                        const SizedBox(height: 24),
-                        const Text(
-                          'NHẬT KÝ XÁC THỰC',
-                          style: TextStyle(
-                            color: Color(0xFF94A3B8),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                    ),
-                  ),
-                  // Danh sách item cuộn
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _buildItemCard(items[index]),
-                      );
-                    }, childCount: items.length),
-                  ),
-                  // Padding nhỏ dưới cùng của danh sách để không bị lấp bởi nút
-                  const SliverToBoxAdapter(child: SizedBox(height: 20)),
-                ],
-              ),
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF101922),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF111827),
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          centerTitle: true,
+          title: const Text(
+            'Tổng kết hoàn thành',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
             ),
           ),
-
-          // PHẦN FIXED: Nút bấm luôn nằm ở đây
-          _buildFixedBottomButtons(context),
-        ],
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildHeader(),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'NHẬT KÝ XÁC THỰC',
+                            style: TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                      ),
+                    ),
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _buildItemCard(widget.items[index]),
+                        );
+                      }, childCount: widget.items.length),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                  ],
+                ),
+              ),
+            ),
+            _buildFixedBottomButtons(context),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildHeader() {
+    String showValue(String value) => value.isEmpty ? '---' : value;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -126,6 +171,22 @@ class ScanCompleteScreen extends StatelessWidget {
           'Tất cả nguyên liệu đã được quét thành công',
           textAlign: TextAlign.center,
           style: TextStyle(color: Color(0xFFCBD5F5), fontSize: 16),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Tank: ${showValue(widget.tankNumber)} | PO: ${showValue(widget.productionOrder)} | Batch: ${showValue(widget.batchNumber)}',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Color(0xFFCBD5F5), fontSize: 12),
+        ),
+        Text(
+          'Product: ${showValue(widget.productCode)} - ${showValue(widget.productName)}',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Color(0xFFCBD5F5), fontSize: 12),
+        ),
+        Text(
+          'Recipe: ${showValue(widget.recipeName)} v${showValue(widget.recipeVersion)} | Shift: ${showValue(widget.shift)} | Planned: ${showValue(widget.plannedStart)}',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Color(0xFFCBD5F5), fontSize: 12),
         ),
       ],
     );
@@ -174,13 +235,6 @@ class ScanCompleteScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          const Text(
-            'Lô: ---',
-            style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
-          ),
-          const SizedBox(height: 8),
-          const Divider(color: Color(0xFF1F2933), height: 1, thickness: 0.5),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -201,15 +255,9 @@ class ScanCompleteScreen extends StatelessWidget {
     );
   }
 
-  // Widget chứa 2 nút bấm cố định
   Widget _buildFixedBottomButtons(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        16,
-        16,
-        32,
-      ), // Padding cho an toàn (Safe Area)
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       decoration: BoxDecoration(
         color: const Color(0xFF101922),
         boxShadow: [
@@ -223,45 +271,65 @@ class ScanCompleteScreen extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1D4ED8),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+          if (_errorMessage != null) ...[
+            Text(
+              _errorMessage!,
+              style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 13),
+            ),
+            const SizedBox(height: 10),
+          ],
+          if (!_apiConfirmed)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1D4ED8),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: _handleConfirm,
+                icon: _isSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.cloud_upload),
+                label: Text(
+                  _isSubmitting ? 'ĐANG GỬI XÁC NHẬN...' : 'XÁC NHẬN VÀ KẾT THÚC',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              onPressed: () => Navigator.of(context).pop(false),
-              icon: const Icon(Icons.cloud_upload),
-              label: const Text(
-                'XÁC NHẬN VÀ KẾT THÚC',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Color(0xFF374151)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+          if (_apiConfirmed)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Color(0xFF374151)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text(
+                  'QUÉT TANK TIẾP THEO',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
               ),
-              onPressed: () => Navigator.of(context).pop(true),
-              icon: const Icon(Icons.qr_code_scanner),
-              label: const Text(
-                'QUÉT TANK TIẾP THEO',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-              ),
             ),
-          ),
         ],
       ),
     );

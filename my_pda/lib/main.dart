@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
-import 'package:flutter/foundation.dart'; // Thêm thư viện này để dùng kReleaseMode
 import 'login_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'services/datawedge_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    await dotenv.load(fileName: ".env");
+    await dotenv.load(fileName: '.env');
   } catch (e) {
-    debugPrint("Lỗi load file .env: $e");
+    debugPrint('Lỗi load file .env: $e');
   }
+
+  await DataWedgeService.instance.initialize();
 
   // runApp(
   //   DevicePreview(
@@ -30,7 +32,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       locale: DevicePreview.locale(context),
       builder: DevicePreview.appBuilder,
-
       debugShowCheckedModeBanner: false,
       title: 'PDA App',
       theme: ThemeData(

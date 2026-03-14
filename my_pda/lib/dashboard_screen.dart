@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:my_pda/models/ingredient.dart';
 import 'widgets/custom_bottom_nav.dart';
@@ -8,6 +9,7 @@ import 'barcode_scanner_screen.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'config/api_config.dart';
+import 'services/datawedge_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   final Map<String, String?>? user;
@@ -19,9 +21,162 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  StreamSubscription? _scanSubscription;
+
   String? scannedCode;
+  String? _currentTankNumber;
+  String? _currentProductionOrder;
+  String? _currentBatchNumber;
+  String? _currentRecipeName;
+  String? _currentRecipeVersion;
+  String? _currentProductCode;
+  String? _currentProductName;
+  String? _currentShift;
+  String? _currentPlannedStart;
   List<IngredientModel> _recipeIngredients = const [];
   bool _isLoadingIngredients = false;
+  bool _isProcessingDashboardScan = false;
+
+  void _logTankScan(String message) {
+    debugPrint('[SCAN][DASHBOARD] $message');
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _bindGlobalScanner();
+  }
+
+  @override
+  void dispose() {
+    _scanSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _bindGlobalScanner() {
+    _scanSubscription = DataWedgeService.instance.scanStream.listen((result) {
+      if (!mounted) return;
+      final route = ModalRoute.of(context);
+      if (route == null || !route.isCurrent) return;
+      if (_isProcessingDashboardScan) return;
+
+      final code = result.data.trim();
+      if (code.isEmpty) return;
+
+      _logTankScan('raw(DataWedge)="$code"');
+      _processTankScan(code);
+    });
+  }
+
+  Future<void> _triggerSoftScanFromDashboard() async {
+    if (DataWedgeService.instance.isSupported) {
+      await DataWedgeService.instance.softTrigger();
+      return;
+    }
+
+    final result = await Navigator.push(
+      context,
+      _slideRoute(const BarcodeScannerScreen(fromDashboard: true)),
+    );
+    if (result != null) {
+      final raw = result.toString().trim();
+      _logTankScan('raw(Camera)="$raw"');
+      _processTankScan(raw);
+    }
+  }
+
+  Future<void> _processTankScan(String code) async {
+    if (_isProcessingDashboardScan) return;
+    _isProcessingDashboardScan = true;
+    try {
+      _logTankScan('start process raw="$code"');
+      final tankNumber = _extractTankNumber(code);
+      if (tankNumber == null) {
+        _logTankScan('parse failed: invalid format, expect AIT10 <TankNumber>');
+        await _showNotificationDialog(
+          context,
+          message:
+              'Mã quét không đúng định dạng. Cần dạng: AIT10 <TankNumber>.',
+          autoClose: true,
+        );
+        return;
+      }
+
+      _currentTankNumber = null;
+      _currentProductionOrder = null;
+      _currentBatchNumber = null;
+      _currentRecipeName = null;
+      _currentRecipeVersion = null;
+      _currentProductCode = null;
+      _currentProductName = null;
+      _currentShift = null;
+      _currentPlannedStart = null;
+
+      setState(() {
+        scannedCode = tankNumber;
+        _isLoadingIngredients = true;
+        _recipeIngredients = const [];
+      });
+      _logTankScan('parse success tankNumber="$tankNumber"');
+
+      final recipeDetails = await _getRecipeDetails(tankNumber);
+      if (!mounted) return;
+
+      setState(() {
+        _recipeIngredients = recipeDetails ?? [];
+        _isLoadingIngredients = false;
+      });
+
+      if (recipeDetails != null) {
+        _logTankScan(
+          'recipe loaded count=${recipeDetails.length} PO="${_currentProductionOrder ?? ''}" Batch="${_currentBatchNumber ?? ''}"',
+        );
+        await Navigator.push(
+          context,
+          _slideRoute(
+            ScanDetailScreen(
+              ingredients: _recipeIngredients,
+              tankNumber: _currentTankNumber ?? tankNumber,
+              productionOrder: _currentProductionOrder ?? '',
+              batchNumber: _currentBatchNumber ?? '',
+              recipeName: _currentRecipeName ?? '',
+              recipeVersion: _currentRecipeVersion ?? '',
+              productCode: _currentProductCode ?? '',
+              productName: _currentProductName ?? '',
+              shift: _currentShift ?? '',
+              plannedStart: _currentPlannedStart ?? '',
+            ),
+          ),
+        );
+        return;
+      }
+
+      await _showNotificationDialog(
+        context,
+        message:
+            'Không lấy được danh sách nguyên liệu cho tank $tankNumber.',
+        autoClose: true,
+      );
+    } finally {
+      _logTankScan('end process');
+      _isProcessingDashboardScan = false;
+    }
+  }
+
+  String? _extractTankNumber(String raw) {
+    final text = raw.trim();
+    if (text.isEmpty) return null;
+
+    final match = RegExp(
+      r'^AIT10\s+(.+)$',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (match == null) return null;
+
+    final tankNumber = (match.group(1) ?? '').trim();
+    _logTankScan('extract tankNumber="$tankNumber" from "$text"');
+    return tankNumber.isEmpty ? null : tankNumber;
+  }
 
   Future<void> _showNotificationDialog(
     BuildContext context, {
@@ -104,34 +259,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Future<Map<String, String>> _getRecipeId(String code) async {
+  bool _isSuccessResponse(Map<String, dynamic> body) {
+    final message = body['Message']?.toString().trim().toLowerCase();
+    return message == 'success';
+  }
+
+  Future<Map<String, String>> _getTankInfo(String code) async {
     try {
       debugPrint('>>> Đang quét mã Tank: $code');
+      final requestBody = {'TankNumber': code};
+      final uri = ApiConfig.endpoint('/getTankInfo');
+      debugPrint('API URL [/getTankInfo]: $uri');
+      debugPrint('API Request [/getTankInfo]: ${jsonEncode(requestBody)}');
       final response = await http
           .post(
-            Uri.parse('${ApiConfig.baseUrl}/getRecipeId'),
+            uri,
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'TankNumber': code}),
+            body: jsonEncode(requestBody),
           )
-          .timeout(const Duration(seconds: 10)); // Tránh treo app
+          .timeout(const Duration(seconds: 10)); // Tranh treo app
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        debugPrint('API Response [/getTankInfo]: ${response.body}');
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
 
-        // Kiểm tra status từ Server
-        if (data['status'] == 'success') {
-          return {
-            'ProductionOrder': data['ProductionOrder']?.toString() ?? '',
-            'BatchNumber': data['BatchNumber']?.toString() ?? '',
-          };
+        if (!_isSuccessResponse(body)) {
+          debugPrint('getTankInfo fail: ${body['Error'] ?? body['Message']}');
+          return {};
         }
-        return {};
+
+        final payload = body['Data'];
+        if (payload is! Map) {
+          debugPrint('getTankInfo fail: Data phải là object.');
+          return {};
+        }
+        final data = Map<String, dynamic>.from(payload);
+
+        final productionOrder =
+            data['ProductionOrder']?.toString().trim() ?? '';
+        final batchNumber = data['BatchNumber']?.toString().trim() ?? '';
+        final recipeName = data['RecipeName']?.toString().trim() ?? '';
+        final recipeVersion = data['RecipeVersion']?.toString().trim() ?? '';
+        final productCode = data['ProductCode']?.toString().trim() ?? '';
+        final productName = data['ProductName']?.toString().trim() ?? '';
+        final shift = data['Shift']?.toString().trim() ?? '';
+        final plannedStart = data['PlannedStart']?.toString().trim() ?? '';
+
+        return {
+          'ProductionOrder': productionOrder,
+          'BatchNumber': batchNumber,
+          'RecipeName': recipeName,
+          'RecipeVersion': recipeVersion,
+          'ProductCode': productCode,
+          'ProductName': productName,
+          'Shift': shift,
+          'PlannedStart': plannedStart,
+        };
       } else {
-        debugPrint('Lỗi Server getRecipeId: ${response.statusCode}');
+        debugPrint('Lỗi Server getTankInfo: ${response.statusCode}');
         return {};
       }
     } catch (e) {
-      debugPrint('Lỗi kết nối getRecipeId: $e');
+      debugPrint('Lỗi kết nối getTankInfo: $e');
       return {};
     }
   }
@@ -139,31 +328,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<List<IngredientModel>?> _getRecipeDetails(String code) async {
     try {
       // Bước 1: Lấy thông tin định danh
-      final idData = await _getRecipeId(code);
+      final idData = await _getTankInfo(code);
       final String po = idData['ProductionOrder'] ?? '';
       final String batch = idData['BatchNumber'] ?? '';
 
       if (po.isEmpty || batch.isEmpty) {
-        debugPrint('⚠️ Không tìm thấy đơn hàng hoặc lô cho mã này.');
+        debugPrint(
+          'Không tìm thấy đơn hàng hoặc lô cho mã này.',
+        );
         return null;
       }
+      _currentTankNumber = code;
+      _currentProductionOrder = po;
+      _currentBatchNumber = batch;
+      _currentRecipeName = idData['RecipeName'] ?? '';
+      _currentRecipeVersion = idData['RecipeVersion'] ?? '';
+      _currentProductCode = idData['ProductCode'] ?? '';
+      _currentProductName = idData['ProductName'] ?? '';
+      _currentShift = idData['Shift'] ?? '';
+      _currentPlannedStart = idData['PlannedStart'] ?? '';
 
       // Bước 2: Lấy chi tiết công thức
-      debugPrint('>>> Đang lấy chi tiết cho PO: $po, Batch: $batch');
+      debugPrint(
+        '>>> Đang lấy chi tiết cho PO: $po, Batch: $batch',
+      );
+      final requestBody = {'ProductionOrder': po, 'BatchNumber': batch};
+      final uri = ApiConfig.endpoint('/getRecipeDetails');
+      debugPrint('API URL [/getRecipeDetails]: $uri');
+      debugPrint('API Request [/getRecipeDetails]: ${jsonEncode(requestBody)}');
       final response = await http
           .post(
-            Uri.parse('${ApiConfig.baseUrl}/getRecipeDetails'),
+            uri,
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'ProductionOrder': po, 'BatchNumber': batch}),
+            body: jsonEncode(requestBody),
           )
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
+        debugPrint('API Response [/getRecipeDetails]: ${response.body}');
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
 
-        // Chuyển đổi sang RecipeResponse
-        final recipeResponse = RecipeResponse.fromJson(data);
-        return recipeResponse.ingredients;
+        if (!_isSuccessResponse(body)) {
+          debugPrint(
+            'getRecipeDetails fail: ${body['Error'] ?? body['Message']}',
+          );
+          return null;
+        }
+
+        final payload = body['Data'];
+        if (payload is! Map) {
+          debugPrint('getRecipeDetails fail: Data phải là object.');
+          return null;
+        }
+        final data = Map<String, dynamic>.from(payload);
+        final ingredientsJson = data['ingredients'] as List? ?? const [];
+
+        return ingredientsJson
+            .whereType<Map>()
+            .map(
+              (item) =>
+                  IngredientModel.fromJson(Map<String, dynamic>.from(item)),
+            )
+            .toList();
       } else {
         debugPrint('Lỗi Server getRecipeDetails: ${response.statusCode}');
         return null;
@@ -174,8 +400,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Map<String, String> _currentShiftInfo() {
+    final hour = DateTime.now().hour;
+    if (hour >= 6 && hour < 14) {
+      return {'name': 'CA 1', 'time': '06:00 - 14:00'};
+    }
+    if (hour >= 14 && hour < 22) {
+      return {'name': 'CA 2', 'time': '14:00 - 22:00'};
+    }
+    return {'name': 'CA 3', 'time': '22:00 - 06:00'};
+  }
+
   @override
   Widget build(BuildContext context) {
+    final hasTankInfo = (scannedCode ?? '').trim().isNotEmpty;
+    final compactDashboard = hasTankInfo;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0F1720),
       appBar: AppBar(
@@ -235,7 +475,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 onTap: () {
                   _showNotificationDialog(
                     context,
-                    message: 'Hiện tại bạn chưa có thông báo mới.',
+                    message:
+                        'Hiện tại bạn chưa có thông báo mới.',
                   );
                 },
                 child: Container(
@@ -265,11 +506,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            if ((_currentTankNumber ?? '').isNotEmpty) ...[
+              SizedBox(height: compactDashboard ? 6 : 8),
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(compactDashboard ? 8 : 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF111827),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF1F2937)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tank: ${_currentTankNumber ?? ''} | PO: ${_currentProductionOrder ?? ''} | Batch: ${_currentBatchNumber ?? ''}',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: compactDashboard ? 11 : 12,
+                      ),
+                    ),
+                    SizedBox(height: compactDashboard ? 2 : 4),
+                    Text(
+                      'Product: ${_currentProductCode ?? ''} - ${_currentProductName ?? ''}',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: compactDashboard ? 11 : 12,
+                      ),
+                    ),
+                    Text(
+                      'Recipe: ${_currentRecipeName ?? ''} v${_currentRecipeVersion ?? ''} | Shift: ${_currentShift ?? ''} | Planned: ${_currentPlannedStart ?? ''}',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: compactDashboard ? 11 : 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             Builder(
               builder: (context) {
                 // Example data; replace with dynamic values as needed
-                final bool isRunning = true;
-                const String shiftTime = '06:00 - 14:00';
+                final shiftInfo = _currentShiftInfo();
+                final bool isRunning =
+                    (_currentShift ?? '').toUpperCase() != 'OFF';
+                final String shiftName = shiftInfo['name']!;
+                final String shiftTime = shiftInfo['time']!;
 
                 return Container(
                   width: double.infinity,
@@ -290,7 +573,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       // left accent (only green when running)
                       Container(
                         width: 6,
-                        height: 84,
+                        height: compactDashboard ? 68 : 84,
                         decoration: BoxDecoration(
                           color: isRunning
                               ? Colors.green
@@ -303,8 +586,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12.0,
+                          padding: EdgeInsets.symmetric(
+                            vertical: compactDashboard ? 8.0 : 12.0,
                             horizontal: 16.0,
                           ),
                           child: Row(
@@ -313,20 +596,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: const [
+                                  children: [
                                     Text(
                                       'CA LÀM VIỆC HIỆN TẠI',
                                       style: TextStyle(
                                         color: Colors.grey,
-                                        fontSize: 12,
+                                        fontSize: compactDashboard ? 11 : 12,
                                       ),
                                     ),
-                                    SizedBox(height: 6),
+                                    SizedBox(height: compactDashboard ? 4 : 6),
                                     Text(
-                                      'CA SÁNG',
+                                      shiftName,
                                       style: TextStyle(
                                         color: Colors.white,
-                                        fontSize: 20,
+                                        fontSize: compactDashboard ? 17 : 20,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -338,9 +621,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 children: [
                                   // custom status pill
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: compactDashboard ? 10 : 12,
+                                      vertical: compactDashboard ? 4 : 6,
                                     ),
                                     decoration: BoxDecoration(
                                       color: isRunning
@@ -377,20 +660,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
-                                          isRunning ? 'ĐANG CHẠY' : 'ĐANG DỪNG',
-                                          style: const TextStyle(
+                                          isRunning
+                                              ? 'ĐANG CHẠY'
+                                              : 'ĐANG DỪNG',
+                                          style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: 12,
+                                            fontSize: compactDashboard ? 11 : 12,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
+                                  SizedBox(height: compactDashboard ? 6 : 8),
                                   // shift time below
                                   Text(
                                     shiftTime,
-                                    style: const TextStyle(color: Colors.grey),
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: compactDashboard ? 11 : 14,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -403,15 +691,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 );
               },
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: compactDashboard ? 6 : 8),
             Row(
               children: [
                 // Completed card
                 Expanded(
                   child: Container(
-                    height: 120,
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.all(12),
+                    height: compactDashboard ? 94 : 120,
+                    margin: EdgeInsets.only(right: compactDashboard ? 6 : 8),
+                    padding: EdgeInsets.all(compactDashboard ? 10 : 12),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0F1724),
                       borderRadius: BorderRadius.circular(12),
@@ -433,7 +721,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 'ĐÃ HOÀN THÀNH',
                                 style: TextStyle(
                                   color: Colors.grey[400],
-                                  fontSize: 12,
+                                  fontSize: compactDashboard ? 11 : 12,
                                 ),
                               ),
                             ),
@@ -452,15 +740,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ],
                         ),
-                        const Text(
+                        Text(
                           '12',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 28,
+                            fontSize: compactDashboard ? 22 : 28,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: compactDashboard ? 6 : 8),
                         // progress bar
                         ClipRRect(
                           borderRadius: BorderRadius.circular(6),
@@ -481,9 +769,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // Waiting tasks card
                 Expanded(
                   child: Container(
-                    height: 120,
-                    margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.all(12),
+                    height: compactDashboard ? 94 : 120,
+                    margin: EdgeInsets.only(left: compactDashboard ? 6 : 8),
+                    padding: EdgeInsets.all(compactDashboard ? 10 : 12),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0F1724),
                       borderRadius: BorderRadius.circular(12),
@@ -505,7 +793,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 'CÔNG VIỆC CHỜ',
                                 style: TextStyle(
                                   color: Colors.grey[400],
-                                  fontSize: 12,
+                                  fontSize: compactDashboard ? 11 : 12,
                                 ),
                               ),
                             ),
@@ -524,15 +812,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ],
                         ),
-                        const Text(
+                        Text(
                           '5',
                           style: TextStyle(
                             color: Colors.orange,
-                            fontSize: 28,
+                            fontSize: compactDashboard ? 22 : 28,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: compactDashboard ? 6 : 8),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(6),
                           child: LinearProgressIndicator(
@@ -550,49 +838,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
-            SizedBox(height: 8),
+            SizedBox(height: compactDashboard ? 6 : 8),
             // Big scan card (styled with corner markers, circular icon and pill)
             Expanded(
               child: Center(
                 child: MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
-                    onTap: () async {
-                      final result = await Navigator.push(
-                        context,
-                        _slideRoute(
-                          const BarcodeScannerScreen(fromDashboard: true),
-                        ),
-                      );
-
-                      if (result != null) {
-                        setState(() {
-                          scannedCode = result;
-                          _isLoadingIngredients = true;
-                        });
-
-                        final recipeDetails = await _getRecipeDetails(result);
-
-                        if (!context.mounted) return;
-
-                        setState(() {
-                          _recipeIngredients = recipeDetails ?? [];
-                          _isLoadingIngredients = false;
-                        });
-
-                        final message = recipeDetails == null
-                            ? 'Không lấy được danh sách nguyên liệu cho tank $result.'
-                            : _recipeIngredients.isEmpty
-                            ? 'Tank $result không có nguyên liệu nào.'
-                            : 'Tank $result có ${_recipeIngredients.length} nguyên liệu.';
-
-                        _showNotificationDialog(
-                          context,
-                          message: message,
-                          autoClose: true,
-                        );
-                      }
-                    },
+                    onTap: _triggerSoftScanFromDashboard,
                     child: Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
@@ -606,7 +859,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ],
                       ),
-                      padding: const EdgeInsets.all(10),
+                      padding: EdgeInsets.all(hasTankInfo ? 8 : 10),
                       child: Stack(
                         children: [
                           // corner markers
@@ -701,9 +954,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
-                                  width: 100,
-                                  height: 100,
-                                  margin: const EdgeInsets.only(bottom: 12),
+                                  width: hasTankInfo ? 78 : 100,
+                                  height: hasTankInfo ? 78 : 100,
+                                  margin: EdgeInsets.only(
+                                    bottom: hasTankInfo ? 8 : 12,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF3EA0FF),
                                     shape: BoxShape.circle,
@@ -717,41 +972,93 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                     ],
                                   ),
-                                  child: const Center(
+                                  child: Center(
                                     child: Icon(
                                       Icons.qr_code_scanner,
-                                      size: 36,
+                                      size: hasTankInfo ? 30 : 36,
                                       color: Colors.white,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  scannedCode ?? 'QUÉT MÃ TANK',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 5.0,
+                                SizedBox(height: hasTankInfo ? 2 : 4),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: double.infinity,
                                   ),
-                                ),
-                                const SizedBox(height: 5),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 40,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF1D63C9),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: const Text(
-                                    'Nhấn để mở camera',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 14,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      scannedCode ?? 'QUÉT MÃ TANK',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: hasTankInfo ? 17 : 24,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: hasTankInfo ? 1.2 : 5.0,
+                                      ),
                                     ),
                                   ),
+                                ),
+                                SizedBox(height: hasTankInfo ? 4 : 5),
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 220),
+                                  child: _isLoadingIngredients
+                                      ? Container(
+                                          key: const ValueKey('loading-state'),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 18,
+                                            vertical: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF1D63C9),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          child: const Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              SizedBox(
+                                                height: 14,
+                                                width: 14,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.white,
+                                                    ),
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'Đang gọi API...',
+                                                style: TextStyle(
+                                                  color: Colors.white70,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : Container(
+                                          key: const ValueKey('idle-state'),
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: hasTankInfo ? 18 : 40,
+                                            vertical: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF1D63C9),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          child: const Text(
+                                            'Nhấn để mở máy quét',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
                                 ),
                               ],
                             ),
@@ -769,9 +1076,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
       bottomNavigationBar: CustomBottomNav(
         onTap: (index) {
           if (index == 1) {
+            if (_currentTankNumber == null ||
+                _currentProductionOrder == null ||
+                _currentBatchNumber == null) {
+              _showNotificationDialog(
+                context,
+                message:
+                    'Vui lòng quét mã tank trước khi vào màn hình chi tiết.',
+                autoClose: true,
+              );
+              return;
+            }
             Navigator.push(
               context,
-              _slideRoute(ScanDetailScreen(ingredients: _recipeIngredients)),
+              _slideRoute(
+                ScanDetailScreen(
+                  ingredients: _recipeIngredients,
+                  tankNumber: _currentTankNumber ?? '',
+                  productionOrder: _currentProductionOrder ?? '',
+                  batchNumber: _currentBatchNumber ?? '',
+                  recipeName: _currentRecipeName ?? '',
+                  recipeVersion: _currentRecipeVersion ?? '',
+                  productCode: _currentProductCode ?? '',
+                  productName: _currentProductName ?? '',
+                  shift: _currentShift ?? '',
+                  plannedStart: _currentPlannedStart ?? '',
+                ),
+              ),
             );
             return;
           }

@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:my_pda/barcode_fail_screen.dart';
 import 'barcode_success_screen.dart';
+import 'services/datawedge_service.dart';
 
 class BarcodeScannerScreen extends StatefulWidget {
   final bool fromDashboard;
@@ -25,7 +25,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   final FocusNode _focusNode = FocusNode();
 
   Timer? _scanDebounce;
+  StreamSubscription? _scanSubscription;
   bool _isProcessingScan = false;
+
+  bool get _useDataWedge => DataWedgeService.instance.isSupported;
 
   String get _displayIngredientName {
     final name = widget.ingredientName?.trim() ?? '';
@@ -35,12 +38,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   @override
   void initState() {
     super.initState();
+    _startListeningScanner();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-
       _focusNode.requestFocus();
-
       Future.delayed(const Duration(milliseconds: 100), () {
         SystemChannels.textInput.invokeMethod('TextInput.hide');
       });
@@ -51,9 +53,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       if (text.isEmpty || _isProcessingScan) return;
 
       _scanDebounce?.cancel();
-      _scanDebounce = Timer(const Duration(milliseconds: 200), () {
-        if (!mounted) return;
-        if (_controller.text.isEmpty || _isProcessingScan) return;
+      _scanDebounce = Timer(const Duration(milliseconds: 180), () {
+        if (!mounted || _controller.text.isEmpty || _isProcessingScan) return;
         _isProcessingScan = true;
         _handleScanned(_controller.text);
       });
@@ -63,26 +64,43 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   @override
   void dispose() {
     _scanDebounce?.cancel();
+    _scanSubscription?.cancel();
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
   }
 
-  Future<void> _handleScanned(String code) async {
-    final trimmed = code.trim();
-    if (trimmed.isEmpty) return;
+  void _startListeningScanner() {
+    if (!_useDataWedge) return;
 
-    if (widget.fromDashboard) {
-      Navigator.of(context).pop(trimmed);
+    _scanSubscription = DataWedgeService.instance.scanStream.listen((result) {
+      if (!mounted) return;
+      final route = ModalRoute.of(context);
+      if (route == null || !route.isCurrent) return;
+      if (_isProcessingScan) return;
+      final code = result.data.trim();
+      if (code.isEmpty) return;
+      _isProcessingScan = true;
+      _handleScanned(code);
+    });
+  }
+
+  Future<void> _handleScanned(String raw) async {
+    final scanned = raw.trim();
+    if (scanned.isEmpty) {
+      _isProcessingScan = false;
       return;
     }
 
-    // Ngữ cảnh khác: hiển thị màn hình thành công/thất bại
+    if (widget.fromDashboard) {
+      Navigator.of(context).pop(scanned);
+      return;
+    }
+
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) =>
             BarcodeSuccessScreen(ingredientName: _displayIngredientName),
-        // builder: (_) => BarcodeFailScreen(ingredientName: _displayIngredientName),
       ),
     );
 
@@ -91,12 +109,25 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     if (result == true) {
       Navigator.of(context).pop(true);
     } else {
-      // Nếu cần quét tiếp, làm sạch input và focus lại
       _controller.clear();
       _focusNode.requestFocus();
       SystemChannels.textInput.invokeMethod('TextInput.hide');
       _isProcessingScan = false;
     }
+  }
+
+  Future<void> _triggerScan() async {
+    if (_useDataWedge) {
+      await DataWedgeService.instance.softTrigger();
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đang quét lại...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
   }
 
   @override
@@ -128,29 +159,26 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // TextField ẩn để nhận dữ liệu từ PDA (keyboard wedge)
-                  Opacity(
-                    opacity: 0,
-                    child: SizedBox(
-                      height: 1,
-                      width: 1,
-                      child: TextField(
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        autofocus: true,
-                        showCursor: false,
-                        onSubmitted: (value) {
-                          _handleScanned(value);
-                        },
-                        keyboardType: TextInputType.visiblePassword,
-                        enableInteractiveSelection: false,
-                        // readOnly: true,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
+                  if (!_useDataWedge)
+                    Opacity(
+                      opacity: 0,
+                      child: SizedBox(
+                        width: 1,
+                        height: 1,
+                        child: TextField(
+                          controller: _controller,
+                          focusNode: _focusNode,
+                          autofocus: true,
+                          showCursor: false,
+                          onSubmitted: _handleScanned,
+                          keyboardType: TextInputType.visiblePassword,
+                          enableInteractiveSelection: false,
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                          ),
                         ),
                       ),
                     ),
-                  ),
                   Container(
                     width: 220,
                     height: 220,
@@ -180,46 +208,26 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Hệ thống sẽ tự động nhận diện khi quét thành công.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white54, fontSize: 14),
-                  ),
                 ],
               ),
             ),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Color(0xFF374151)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    onPressed: () {
-                      // Quét lại: ở lại màn hình, có thể reset trạng thái / show snackbar
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Đang quét lại...'),
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                    child: const Text(
-                      'Quét lại',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Color(0xFF374151)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-              ],
+                onPressed: _triggerScan,
+                child: const Text(
+                  'Quét lại',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ),
             ),
           ],
         ),
